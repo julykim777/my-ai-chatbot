@@ -4,28 +4,67 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI 챗봇</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="chat-container">
-    <header class="chat-header">
-      <h1>AI 챗봇</h1>
-      <button id="reset-btn" type="button">새 대화</button>
+  <!-- 배경 반짝이 -->
+  <div class="sparkles" aria-hidden="true">
+    <span>✦</span><span>✧</span><span>★</span><span>✦</span><span>✧</span>
+    <span>☆</span><span>✦</span><span>✧</span><span>★</span><span>✦</span>
+  </div>
+
+  <div class="window">
+    <!-- 타이틀 바 -->
+    <header class="title-bar">
+      <div class="title">
+        <span class="title-icon">👾</span>
+        <span>my-ai-chatbot.exe</span>
+      </div>
+      <div class="title-buttons" aria-hidden="true">
+        <span>_</span><span>□</span><span>×</span>
+      </div>
     </header>
 
+    <!-- 메뉴 바 -->
+    <nav class="menu-bar">
+      <button id="reset-btn" type="button">🗑️ 새 대화</button>
+      <button id="theme-btn" type="button">🌙 밤 모드</button>
+      <span class="menu-marquee"><span>★ WELCOME TO MY CYBER ROOM ★ 무엇이든 물어보세요 ★ ~(^▽^)~ ★</span></span>
+    </nav>
+
     <main id="chat-box" class="chat-box">
-      <div class="message assistant">안녕하세요! 무엇을 도와드릴까요?</div>
+      <!-- 시작 화면 -->
+      <section id="welcome" class="welcome">
+        <div class="welcome-bot">🤖</div>
+        <p class="welcome-title">안녕! 나는 픽셀봇이야 ✧</p>
+        <p class="welcome-sub">아래 질문을 눌러서 시작해 봐</p>
+        <div class="suggestions">
+          <button class="chip" type="button">🎬 오늘 볼 만한 영화 추천해 줘</button>
+          <button class="chip" type="button">💾 Y2K 감성이 뭐야?</button>
+          <button class="chip" type="button">🍜 오늘 저녁 메뉴 골라 줘</button>
+          <button class="chip" type="button">✍️ 기분 좋아지는 한 줄 써 줘</button>
+        </div>
+      </section>
     </main>
 
     <form id="chat-form" class="chat-form">
       <textarea
         id="user-input"
         rows="1"
-        placeholder="메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
+        placeholder="메시지 입력... (Enter 전송 / Shift+Enter 줄바꿈)"
         required
       ></textarea>
-      <button id="send-btn" type="submit">전송</button>
+      <button id="send-btn" type="submit">전송 ▶</button>
     </form>
+
+    <!-- 상태 바 -->
+    <footer class="status-bar">
+      <span class="status-cell"><span class="dot"></span> 온라인</span>
+      <span class="status-cell">gpt-4o-mini</span>
+      <span class="status-cell" id="msg-count">메시지 0개</span>
+      <span class="status-cell" id="clock">--:--</span>
+    </footer>
   </div>
 
   <script src="script.js"></script>
