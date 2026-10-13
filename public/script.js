@@ -12,8 +12,25 @@ const BOT_AVATAR = "🤖";
 const USER_AVATAR = "😎";
 const TYPING_SPEED = 18; // 글자당 ms
 
-// 대화 기록 (DB 대신 브라우저 메모리에 보관하고 매 요청마다 서버로 전송)
+const STORAGE_KEY = "chat-history";
+
+// 대화 기록 (DB 대신 브라우저 localStorage에 저장하고 매 요청마다 서버로 전송)
 let messages = [];
+
+function saveHistory() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  } catch {}
+}
+
+function loadHistory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
 
 function timeNow() {
   return new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
@@ -28,7 +45,7 @@ function updateCount() {
 }
 
 // 아바타 + 말풍선 + 시간(+ 복사 버튼) 한 줄 만들기
-function addMessage(text, role) {
+function addMessage(text, role, time = timeNow()) {
   welcome.hidden = true;
 
   const row = document.createElement("div");
@@ -47,7 +64,7 @@ function addMessage(text, role) {
 
   const meta = document.createElement("div");
   meta.className = "meta";
-  meta.textContent = timeNow();
+  meta.textContent = time;
 
   body.append(bubble, meta);
   row.append(avatar, body);
@@ -103,9 +120,11 @@ function typeWriter(bubble, text) {
 }
 
 async function sendMessage(text) {
-  messages.push({ role: "user", content: text });
-  addMessage(text, "user");
+  const time = timeNow();
+  messages.push({ role: "user", content: text, time });
+  addMessage(text, "user", time);
   updateCount();
+  saveHistory();
 
   sendBtn.disabled = true;
   const typingRow = showTyping();
@@ -121,16 +140,19 @@ async function sendMessage(text) {
     if (!res.ok) throw new Error(data.error || "요청에 실패했습니다.");
 
     typingRow.remove();
-    messages.push({ role: "assistant", content: data.reply });
+    const replyTime = timeNow();
+    messages.push({ role: "assistant", content: data.reply, time: replyTime });
     updateCount();
+    saveHistory();
 
-    const { bubble, meta } = addMessage("", "assistant");
+    const { bubble, meta } = addMessage("", "assistant", replyTime);
     await typeWriter(bubble, data.reply);
     addCopyButton(meta, data.reply);
   } catch (err) {
     typingRow.remove();
     messages.pop(); // 실패한 질문은 기록에서 제거
     updateCount();
+    saveHistory();
     addMessage(err.message, "error");
   } finally {
     sendBtn.disabled = false;
@@ -176,8 +198,17 @@ resetBtn.addEventListener("click", () => {
   chatBox.querySelectorAll(".msg-row").forEach((row) => row.remove());
   welcome.hidden = false;
   updateCount();
+  saveHistory();
   userInput.focus();
 });
+
+// 저장된 대화 복원 (새로고침해도 이전 대화 유지)
+messages = loadHistory();
+messages.forEach((m) => {
+  const { meta } = addMessage(m.content, m.role, m.time || "");
+  if (m.role === "assistant") addCopyButton(meta, m.content);
+});
+updateCount();
 
 // 낮/밤 테마 전환 (선택한 테마는 브라우저에 기억)
 function applyTheme(theme) {
