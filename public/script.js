@@ -7,6 +7,13 @@ const themeBtn = document.getElementById("theme-btn");
 const welcome = document.getElementById("welcome");
 const msgCount = document.getElementById("msg-count");
 const clock = document.getElementById("clock");
+const transferBtn = document.getElementById("transfer-btn");
+const transferModal = document.getElementById("transfer-modal");
+const modalClose = document.getElementById("modal-close");
+const qrBox = document.getElementById("qr");
+const transferNote = document.getElementById("transfer-note");
+const copyLinkBtn = document.getElementById("copy-link-btn");
+const shareBtn = document.getElementById("share-btn");
 
 const BOT_AVATAR = "🤖";
 const USER_AVATAR = "😎";
@@ -202,13 +209,145 @@ resetBtn.addEventListener("click", () => {
   userInput.focus();
 });
 
+// 가운데 정렬 안내 메시지 (대화 기록에는 포함되지 않음)
+function addNotice(text) {
+  welcome.hidden = true;
+  const row = document.createElement("div");
+  row.className = "msg-row notice";
+  const span = document.createElement("span");
+  span.textContent = text;
+  row.appendChild(span);
+  chatBox.appendChild(row);
+  scrollToBottom();
+}
+
+function renderHistory() {
+  chatBox.querySelectorAll(".msg-row").forEach((row) => row.remove());
+  welcome.hidden = messages.length > 0;
+  messages.forEach((m) => {
+    const { meta } = addMessage(m.content, m.role, m.time || "");
+    if (m.role === "assistant") addCopyButton(meta, m.content);
+  });
+  updateCount();
+}
+
+// ===== 다른 기기로 옮기기 (DB 없이 링크 #뒤에 대화를 압축해서 담음) =====
+const TRANSFER_PREFIX = "#import=";
+const MAX_TRANSFER = 20;
+
+async function encodeHistory(list) {
+  const compact = list.map((m) => ({ r: m.role === "user" ? "u" : "a", c: m.content, t: m.time || "" }));
+  const stream = new Blob([JSON.stringify(compact)])
+    .stream()
+    .pipeThrough(new CompressionStream("deflate-raw"));
+  const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+  let binary = "";
+  bytes.forEach((b) => (binary += String.fromCharCode(b)));
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function decodeHistory(code) {
+  const binary = atob(code.replace(/-/g, "+").replace(/_/g, "/"));
+  const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  const compact = JSON.parse(await new Response(stream).text());
+  return compact.map((m) => ({
+    role: m.r === "u" ? "user" : "assistant",
+    content: String(m.c),
+    time: m.t || "",
+  }));
+}
+
+// QR에 다 안 들어가면 오래된 메시지부터 빼면서 맞춤
+async function buildTransferLink() {
+  const base = location.origin + location.pathname;
+  for (let n = Math.min(messages.length, MAX_TRANSFER); n >= 1; n--) {
+    const url = base + TRANSFER_PREFIX + (await encodeHistory(messages.slice(-n)));
+    try {
+      const qr = qrcode(0, "L");
+      qr.addData(url);
+      qr.make();
+      return { url, qr, count: n };
+    } catch {
+      // 너무 길면 메시지 수를 줄여서 다시 시도
+    }
+  }
+  return { url: base + TRANSFER_PREFIX + (await encodeHistory(messages.slice(-1))), qr: null, count: 1 };
+}
+
+let transferUrl = "";
+
+transferBtn.addEventListener("click", async () => {
+  qrBox.innerHTML = "";
+  transferModal.hidden = false;
+
+  if (messages.length === 0) {
+    transferNote.textContent = "아직 옮길 대화가 없어요. 먼저 대화를 시작해 봐!";
+    copyLinkBtn.hidden = shareBtn.hidden = true;
+    return;
+  }
+
+  const { url, qr, count } = await buildTransferLink();
+  transferUrl = url;
+  if (qr) qrBox.innerHTML = qr.createImgTag(4, 0);
+  transferNote.textContent =
+    count < messages.length ? `최근 메시지 ${count}개를 옮겨요` : `메시지 ${count}개를 옮겨요`;
+  copyLinkBtn.hidden = false;
+  shareBtn.hidden = !navigator.share;
+});
+
+copyLinkBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(transferUrl);
+    copyLinkBtn.textContent = "✔ 복사됨";
+  } catch {
+    copyLinkBtn.textContent = "✖ 실패";
+  }
+  setTimeout(() => (copyLinkBtn.textContent = "🔗 링크 복사"), 1500);
+});
+
+shareBtn.addEventListener("click", () => {
+  navigator.share({ title: "AI 챗봇 대화 이어하기", url: transferUrl }).catch(() => {});
+});
+
+function closeModal() {
+  transferModal.hidden = true;
+}
+modalClose.addEventListener("click", closeModal);
+transferModal.addEventListener("click", (e) => {
+  if (e.target === transferModal) closeModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+});
+
+// 링크로 들어왔으면 대화 가져오기
+async function importFromLink() {
+  if (!location.hash.startsWith(TRANSFER_PREFIX)) return;
+  const code = location.hash.slice(TRANSFER_PREFIX.length);
+  history.replaceState(null, "", location.pathname + location.search);
+
+  try {
+    const imported = await decodeHistory(code);
+    if (
+      messages.length > 0 &&
+      !confirm("다른 기기에서 가져온 대화로 바꿀까요?\n(이 기기의 지금 대화는 사라져요)")
+    ) {
+      return;
+    }
+    messages = imported;
+    saveHistory();
+    renderHistory();
+    addNotice("📱 다른 기기의 대화를 불러왔어요! 이어서 이야기해요");
+  } catch {
+    addNotice("⚠️ 대화를 불러오지 못했어요. 링크가 잘렸을 수 있어요");
+  }
+}
+
 // 저장된 대화 복원 (새로고침해도 이전 대화 유지)
 messages = loadHistory();
-messages.forEach((m) => {
-  const { meta } = addMessage(m.content, m.role, m.time || "");
-  if (m.role === "assistant") addCopyButton(meta, m.content);
-});
-updateCount();
+renderHistory();
+importFromLink();
 
 // 낮/밤 테마 전환 (선택한 테마는 브라우저에 기억)
 function applyTheme(theme) {

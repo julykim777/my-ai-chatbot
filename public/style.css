@@ -99,6 +99,7 @@ body {
 .window {
   position: relative;
   width: 100%;
+  min-width: 0;
   max-width: 760px;
   height: calc(100vh - 32px);
   max-height: 880px;
@@ -138,6 +139,8 @@ body {
 }
 
 .title-buttons span,
+.close-btn,
+.dialog-actions button,
 .menu-bar button,
 #send-btn,
 .chip,
@@ -410,6 +413,7 @@ body {
 
 #user-input {
   flex: 1;
+  min-width: 0;
   resize: none;
   padding: 10px;
   font: inherit;
@@ -463,6 +467,102 @@ body {
   background: #00d26a;
   box-shadow: 0 0 6px #00d26a;
   animation: blink 1.2s steps(1) infinite;
+}
+
+/* ===== 안내 메시지 ===== */
+.msg-row.notice {
+  justify-content: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.msg-row.notice span {
+  padding: 4px 10px;
+  border: 2px dashed var(--accent);
+  background: var(--bot-bubble);
+}
+
+/* ===== 다른 기기로 옮기기 창 ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 10;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 340px;
+  background: var(--win);
+  padding: 3px;
+  border: 2px solid;
+  border-color: var(--win-light) var(--win-darker) var(--win-darker) var(--win-light);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.35);
+  animation: pop-in 0.2s steps(3);
+}
+
+.close-btn {
+  width: 22px;
+  height: 20px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.qr {
+  padding: 8px;
+  background: #fff;
+  border: 2px solid;
+  border-color: var(--win-dark) var(--win-light) var(--win-light) var(--win-dark);
+}
+
+.qr img {
+  display: block;
+  width: 220px;
+  height: 220px;
+  image-rendering: pixelated;
+}
+
+.qr:empty {
+  display: none;
+}
+
+.dialog-note {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dialog-actions button {
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dialog-actions button[hidden] {
+  display: none;
 }
 
 /* ===== 모바일 ===== */

@@ -30,6 +30,7 @@
     <nav class="menu-bar">
       <button id="reset-btn" type="button">🗑️ 새 대화</button>
       <button id="theme-btn" type="button">🌙 밤 모드</button>
+      <button id="transfer-btn" type="button">📱 다른 기기로</button>
       <span class="menu-marquee"><span>★ WELCOME TO MY CYBER ROOM ★ 무엇이든 물어보세요 ★ ~(^▽^)~ ★</span></span>
     </nav>
 
@@ -67,6 +68,26 @@
     </footer>
   </div>
 
+  <!-- 다른 기기로 옮기기 창 -->
+  <div id="transfer-modal" class="modal" hidden>
+    <div class="dialog">
+      <header class="title-bar">
+        <div class="title"><span>📱</span><span>다른 기기로 옮기기</span></div>
+        <button id="modal-close" class="close-btn" type="button" aria-label="닫기">×</button>
+      </header>
+      <div class="dialog-body">
+        <p>폰 카메라로 QR을 찍으면<br />이 대화가 그대로 이어져요 ✧</p>
+        <div id="qr" class="qr"></div>
+        <p id="transfer-note" class="dialog-note"></p>
+        <div class="dialog-actions">
+          <button id="copy-link-btn" type="button">🔗 링크 복사</button>
+          <button id="share-btn" type="button">📤 공유</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
